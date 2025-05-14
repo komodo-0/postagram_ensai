@@ -1,8 +1,10 @@
 import json
 from urllib.parse import unquote_plus
 import boto3
+from botocore.config import Config
 import os
 import logging
+from data import data
 print('Loading function')
 logger = logging.getLogger()
 logger.setLevel("INFO")
@@ -14,7 +16,7 @@ table = dynamodb.Table(os.getenv("table"))
 
 def lambda_handler(event, context):
     logger.info(json.dumps(event, indent=2))
-    bucket = ""
+    bucket = "bucket"
     key = unquote_plus(event) # <- A modifier !!!!
 
     # Récupération de l'utilisateur et de l'UUID de la tâche

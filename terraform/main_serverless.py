@@ -17,11 +17,14 @@ class ServerlessStack(TerraformStack):
         super().__init__(scope, id)
         AwsProvider(self, "AWS", region="us-east-1")
 
-        account_id = DataAwsCallerIdentity(self, "acount_id").account_id
+        account_id = DataAwsCallerIdentity(self, "account_id").account_id
         
         bucket = S3Bucket(
             self, "bucket",
-            bucket_prefix=""
+            bucket_prefix="bucket",
+            acl="private",
+            force_destroy=True,
+            versioning= {'enabled':True}
         )
 
         # NE PAS TOUCHER !!!!
@@ -37,31 +40,35 @@ class ServerlessStack(TerraformStack):
 
         dynamo_table = DynamodbTable(
             self, "DynamodDB-table",
-            name= "",
-            hash_key="",
-            range_key="",
+            name= "table",
+            hash_key="USER",
+            range_key="POST",
             attribute=[
-                DynamodbTableAttribute(name="",type="S" ),
-                DynamodbTableAttribute(name="",type="S" ),
+                DynamodbTableAttribute(name="USER",type="S" ),
+                DynamodbTableAttribute(name="POST",type="S" ),
             ],
             billing_mode="PROVISIONED",
             read_capacity=5,
             write_capacity=5
         )
 
-        code = TerraformAsset()
-
-        lambda_function = LambdaFunction(
-            self, "lambda",
-            function_name="",
-            runtime="python3.10",
-            memory_size=128,
-            timeout=60,
-            role=f"",
-            filename= code.path,
-            handler="",
-            environment={"variables":{}}
+        code = TerraformAsset(
+            self, "code",
+            path="./lambda",
+            type= AssetType.ARCHIVE
         )
+
+        '''lambda_function = LambdaFunction(
+             self, "lambda",
+             function_name="lambda",
+             runtime="python3.10",
+             memory_size=128,
+             timeout=60,
+             role=f"arn:aws:iam::{account_id}:role/LabRole",
+             filename= code.path,
+             handler="lambda_function.lambda_handler",
+             environment={"variables":{"foo":"bar", "BUCKET":bucket.bucket, "DYNAMO_TABLE":dynamo_table.table}}
+         )
 
         # NE PAS TOUCHER !!!!
         permission = LambdaPermission(
@@ -85,7 +92,13 @@ class ServerlessStack(TerraformStack):
             bucket=bucket.id,
             depends_on=[permission]
         )
+'''
 
+        self.bucket = bucket
+        self.dynamo_table = dynamo_table
+
+        TerraformOutput(self, "bucket_name", value= bucket.bucket)
+        TerraformOutput(self, "table_name", value= dynamo_table.name)
 
 
 app = App()

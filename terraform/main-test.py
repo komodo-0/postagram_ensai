@@ -1,26 +1,27 @@
+
 import pytest
 from cdktf import Testing
-
-# The tests below are example tests, you can find more information at
-# https://cdk.tf/testing
-
+from main import MyStack
 
 class TestMain:
 
-    def test_my_app(self):
-        assert True
+    def setup_method(self):
+        self.app = Testing.app()
+        self.stack = MyStack(self.app, "test")
+        self.synthesized = Testing.synth(self.stack)
 
-    #stack = TerraformStack(Testing.app(), "stack")
-    #app_abstraction = MyApplicationsAbstraction(stack, "app-abstraction")
-    #synthesized = Testing.synth(stack)
+    def test_should_be_valid_terraform(self):
+        assert Testing.to_be_valid_terraform(self.synthesized)
 
-    # def test_should_contain_container(self):
-    #    assert Testing.to_have_resource(self.synthesized, Container.TF_RESOURCE_TYPE)
+    def test_should_contain_s3_bucket(self):
+        assert Testing.to_have_resource(self.synthesized, "aws_s3_bucket")
 
-    # def test_should_use_an_ubuntu_image(self):
-    #    assert Testing.to_have_resource_with_properties(self.synthesized, Image.TF_RESOURCE_TYPE, {
-    #        "name": "ubuntu:latest",
-    #    })
+    def test_should_contain_dynamodb_table(self):
+        assert Testing.to_have_resource(self.synthesized, "aws_dynamodb_table")
 
-    # def test_check_validity(self):
-    #    assert Testing.to_be_valid_terraform(Testing.full_synth(stack))
+    def test_should_contain_launch_template(self):
+        assert Testing.to_have_resource(self.synthesized, "aws_launch_template")
+
+    def test_should_contain_load_balancer(self):
+        assert Testing.to_have_resource(self.synthesized, "aws_lb")
+
